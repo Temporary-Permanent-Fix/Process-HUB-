@@ -1,6 +1,7 @@
-import { Search } from 'lucide-react'
+import { LogOut, Search } from 'lucide-react'
 import type { Purpose, Status } from '../types/tool'
 import { PURPOSE_LABELS, STATUS_LABELS } from '../types/tool'
+import { useAuth } from '../lib/AuthContext'
 
 interface HeaderProps {
   counts: Record<Status, number>
@@ -24,6 +25,8 @@ export default function Header({
   statusFilter,
   onStatusFilterChange,
 }: HeaderProps) {
+  const { session, signOut } = useAuth()
+
   return (
     <header className="border-b border-border bg-panel">
       <div className="hazard-stripe h-2 w-full" />
@@ -38,12 +41,31 @@ export default function Header({
             <p className="mt-1.5 text-sm text-textDim">Ovládací panel interných nástrojov</p>
           </div>
 
-          <div className="text-xs uppercase tracking-wide text-textDim">
-            <span className="text-status-online">{counts.online} online</span>
-            <span className="text-textFaint"> · </span>
-            <span className="text-status-vyvoj">{counts.vyvoj} vo vývoji</span>
-            <span className="text-textFaint"> · </span>
-            <span className="text-status-chyba">{counts.chyba} chyba</span>
+          <div className="flex items-center gap-4">
+            <div className="text-xs uppercase tracking-wide text-textDim">
+              <span className="text-status-online">{counts.online} online</span>
+              <span className="text-textFaint"> · </span>
+              <span className="text-status-vyvoj">{counts.vyvoj} vo vývoji</span>
+              <span className="text-textFaint"> · </span>
+              <span className="text-status-chyba">{counts.chyba} chyba</span>
+            </div>
+
+            {session && (
+              <div className="flex items-center gap-2 border-l border-border pl-4">
+                <span className="hidden text-xs text-textFaint sm:inline">
+                  {session.user.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="flex items-center gap-1.5 rounded border border-border px-2 py-1 text-xs uppercase tracking-wide text-textDim hover:border-status-chyba/50 hover:text-status-chyba"
+                  title="Odhlásiť sa"
+                >
+                  <LogOut size={13} />
+                  Odhlásiť
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
