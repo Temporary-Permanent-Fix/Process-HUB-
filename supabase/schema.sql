@@ -113,6 +113,94 @@ create policy "Admins can delete tools"
   to authenticated
   using (public.current_user_role() in ('admin', 'mega_admin'));
 
+-- ========== issues ==========
+create extension if not exists pgcrypto;
+
+create table if not exists public.issues (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null,
+  category text not null check (
+    category in ('shuttle', 'autostore', 'pick', 'pack', 'stow', 'receive', 'reverse_logistics', 'expedition')
+  ),
+  priority text not null check (priority in ('nizka', 'stredna', 'vysoka')),
+  status text not null default 'open' check (status in ('open', 'in_progress', 'resolved', 'closed')),
+  reporter_id uuid not null references auth.users (id) on delete cascade,
+  reporter_username text not null,
+  assignee_id uuid references auth.users (id) on delete set null,
+  assignee_username text,
+  attachments jsonb not null default '[]'::jsonb,
+  created_at bigint not null
+);
+
+alter table public.issues enable row level security;
+
+create table if not exists public.issue_comments (
+  id uuid primary key default gen_random_uuid(),
+  issue_id uuid not null references public.issues (id) on delete cascade,
+  author_id uuid not null references auth.users (id) on delete cascade,
+  author_username text not null,
+  body text not null,
+  created_at bigint not null
+);
+
+alter table public.issue_comments enable row level security;
+
+-- ---- issues policies ----
+-- Shared visibility: every signed-in user sees every issue.
+drop policy if exists "Authenticated users can read issues" on public.issues;
+create policy "Authenticated users can read issues"
+  on public.issues for select
+  to authenticated
+  using (true);
+
+-- Anyone can report an issue, but only as themselves.
+drop policy if exists "Authenticated users can create issues" on public.issues;
+create policy "Authenticated users can create issues"
+  on public.issues for insert
+  to authenticated
+  with check (reporter_id = auth.uid());
+
+-- Only admins change status/assignee.
+drop policy if exists "Admins can update issues" on public.issues;
+create policy "Admins can update issues"
+  on public.issues for update
+  to authenticated
+  using (public.current_user_role() in ('admin', 'mega_admin'))
+  with check (public.current_user_role() in ('admin', 'mega_admin'));
+
+drop policy if exists "Admins can delete issues" on public.issues;
+create policy "Admins can delete issues"
+  on public.issues for delete
+  to authenticated
+  using (public.current_user_role() in ('admin', 'mega_admin'));
+
+-- ---- issue_comments policies ----
+-- Append-only conversation: everyone reads, everyone can post as themselves,
+-- nobody edits or deletes (no update/delete policy defined).
+drop policy if exists "Authenticated users can read issue comments" on public.issue_comments;
+create policy "Authenticated users can read issue comments"
+  on public.issue_comments for select
+  to authenticated
+  using (true);
+
+drop policy if exists "Authenticated users can add issue comments" on public.issue_comments;
+create policy "Authenticated users can add issue comments"
+  on public.issue_comments for insert
+  to authenticated
+  with check (author_id = auth.uid());
+
+-- ---- issue media storage ----
+insert into storage.buckets (id, name, public)
+values ('issue-media', 'issue-media', true)
+on conflict (id) do nothing;
+
+drop policy if exists "Authenticated can upload issue media" on storage.objects;
+create policy "Authenticated can upload issue media"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'issue-media');
+
 -- ---- realtime ----
 do $$
 begin
@@ -128,6 +216,20 @@ begin
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'profiles'
   ) then
     alter publication supabase_realtime add table public.profiles;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'issues'
+  ) then
+    alter publication supabase_realtime add table public.issues;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'issue_comments'
+  ) then
+    alter publication supabase_realtime add table public.issue_comments;
   end if;
 end $$;
 

@@ -1,17 +1,12 @@
-import { Eye, LogOut, Search, UserCog } from 'lucide-react'
-import type { Purpose, Status } from '../types/tool'
-import { PURPOSE_LABELS, STATUS_LABELS } from '../types/tool'
+import { Eye, LogOut, UserCog } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { shadowEmailToUsername } from '../lib/username'
 
+export type Tab = 'tools' | 'issues'
+
 interface HeaderProps {
-  counts: Record<Status, number>
-  search: string
-  onSearchChange: (value: string) => void
-  purposeFilter: Purpose | 'all'
-  onPurposeFilterChange: (value: Purpose | 'all') => void
-  statusFilter: Status | 'all'
-  onStatusFilterChange: (value: Status | 'all') => void
+  activeTab: Tab
+  onTabChange: (tab: Tab) => void
   canManageTools: boolean
   isMegaAdmin: boolean
   viewAsUser: boolean
@@ -19,17 +14,14 @@ interface HeaderProps {
   onOpenAdminPanel: () => void
 }
 
-const PURPOSE_FILTERS: Array<Purpose | 'all'> = ['all', 'analyza', 'predikcia', 'fakturacia']
-const STATUS_FILTERS: Array<Status | 'all'> = ['all', 'online', 'vyvoj', 'chyba']
+const TABS: Array<{ key: Tab; label: string }> = [
+  { key: 'tools', label: 'Nástroje' },
+  { key: 'issues', label: 'Nahlásené problémy' },
+]
 
 export default function Header({
-  counts,
-  search,
-  onSearchChange,
-  purposeFilter,
-  onPurposeFilterChange,
-  statusFilter,
-  onStatusFilterChange,
+  activeTab,
+  onTabChange,
   canManageTools,
   isMegaAdmin,
   viewAsUser,
@@ -52,111 +44,68 @@ export default function Header({
             <p className="mt-1.5 text-sm text-textDim">Ovládací panel interných nástrojov</p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-xs uppercase tracking-wide text-textDim">
-              <span className="text-status-online">{counts.online} online</span>
-              <span className="text-textFaint"> · </span>
-              <span className="text-status-vyvoj">{counts.vyvoj} vo vývoji</span>
-              <span className="text-textFaint"> · </span>
-              <span className="text-status-chyba">{counts.chyba} chyba</span>
-            </div>
+          {session && (
+            <div className="flex items-center gap-2">
+              <span className="hidden text-xs text-textFaint sm:inline">
+                {session.user.user_metadata?.username ?? shadowEmailToUsername(session.user.email)}
+              </span>
 
-            {session && (
-              <div className="flex items-center gap-2 border-l border-border pl-4">
-                <span className="hidden text-xs text-textFaint sm:inline">
-                  {session.user.user_metadata?.username ?? shadowEmailToUsername(session.user.email)}
-                </span>
-
-                {canManageTools && (
-                  <button
-                    type="button"
-                    onClick={onToggleViewAsUser}
-                    className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs uppercase tracking-wide transition-colors ${
-                      viewAsUser
-                        ? 'border-accent bg-accent/15 text-accent'
-                        : 'border-border text-textDim hover:bg-panelHover'
-                    }`}
-                    title="Prepnúť náhľad ako bežný používateľ"
-                  >
-                    <Eye size={13} />
-                    {viewAsUser ? 'Návrat do administrácie' : 'Zobraziť ako používateľ'}
-                  </button>
-                )}
-
-                {isMegaAdmin && (
-                  <button
-                    type="button"
-                    onClick={onOpenAdminPanel}
-                    className="flex items-center gap-1.5 rounded border border-border px-2 py-1 text-xs uppercase tracking-wide text-textDim hover:bg-panelHover hover:text-text"
-                    title="Administrácia používateľov"
-                  >
-                    <UserCog size={13} />
-                    Administrácia
-                  </button>
-                )}
-
+              {canManageTools && (
                 <button
                   type="button"
-                  onClick={() => signOut()}
-                  className="flex items-center gap-1.5 rounded border border-border px-2 py-1 text-xs uppercase tracking-wide text-textDim hover:border-status-chyba/50 hover:text-status-chyba"
-                  title="Odhlásiť sa"
+                  onClick={onToggleViewAsUser}
+                  className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs uppercase tracking-wide transition-colors ${
+                    viewAsUser
+                      ? 'border-accent bg-accent/15 text-accent'
+                      : 'border-border text-textDim hover:bg-panelHover'
+                  }`}
+                  title="Prepnúť náhľad ako bežný používateľ"
                 >
-                  <LogOut size={13} />
-                  Odhlásiť
+                  <Eye size={13} />
+                  {viewAsUser ? 'Návrat do administrácie' : 'Zobraziť ako používateľ'}
                 </button>
-              </div>
-            )}
-          </div>
+              )}
+
+              {isMegaAdmin && (
+                <button
+                  type="button"
+                  onClick={onOpenAdminPanel}
+                  className="flex items-center gap-1.5 rounded border border-border px-2 py-1 text-xs uppercase tracking-wide text-textDim hover:bg-panelHover hover:text-text"
+                  title="Administrácia používateľov"
+                >
+                  <UserCog size={13} />
+                  Administrácia
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="flex items-center gap-1.5 rounded border border-border px-2 py-1 text-xs uppercase tracking-wide text-textDim hover:border-status-chyba/50 hover:text-status-chyba"
+                title="Odhlásiť sa"
+              >
+                <LogOut size={13} />
+                Odhlásiť
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] flex-1">
-            <Search
-              size={15}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-textFaint"
-            />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Hľadať podľa názvu..."
-              className="w-full rounded border border-border bg-bg py-2 pl-9 pr-3 text-sm text-text outline-none focus:border-accent"
-            />
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            {PURPOSE_FILTERS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => onPurposeFilterChange(p)}
-                className={`rounded border px-2.5 py-1.5 text-xs uppercase tracking-wide transition-colors ${
-                  purposeFilter === p
-                    ? 'border-accent bg-accent/15 text-accent'
-                    : 'border-border text-textDim hover:bg-panelHover'
-                }`}
-              >
-                {p === 'all' ? 'Všetky účely' : PURPOSE_LABELS[p]}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
-            {STATUS_FILTERS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onStatusFilterChange(s)}
-                className={`rounded border px-2.5 py-1.5 text-xs uppercase tracking-wide transition-colors ${
-                  statusFilter === s
-                    ? 'border-accent bg-accent/15 text-accent'
-                    : 'border-border text-textDim hover:bg-panelHover'
-                }`}
-              >
-                {s === 'all' ? 'Všetky stavy' : STATUS_LABELS[s]}
-              </button>
-            ))}
-          </div>
+        <div className="mt-5 flex gap-1.5">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => onTabChange(tab.key)}
+              className={`rounded border px-4 py-2 text-xs uppercase tracking-wide transition-colors ${
+                activeTab === tab.key
+                  ? 'border-accent bg-accent/15 text-accent'
+                  : 'border-border text-textDim hover:bg-panelHover'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
     </header>
