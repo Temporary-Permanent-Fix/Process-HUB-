@@ -6,7 +6,7 @@ import RivetCorners from './RivetCorners'
 export default function LoginScreen() {
   const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
@@ -18,16 +18,25 @@ export default function LoginScreen() {
     setInfo(null)
     setSubmitting(true)
 
-    const result = mode === 'signIn' ? await signIn(email, password) : await signUp(email, password)
-
-    setSubmitting(false)
-    if (result) {
-      setError(result)
+    if (mode === 'signIn') {
+      const signInError = await signIn(username, password)
+      setSubmitting(false)
+      if (signInError) setError(signInError)
       return
     }
-    if (mode === 'signUp') {
-      setInfo('Účet vytvorený. Skontrolujte e-mail pre potvrdenie, potom sa prihláste.')
+
+    const { error: signUpError, needsConfirmation } = await signUp(username, password)
+    setSubmitting(false)
+    if (signUpError) {
+      setError(signUpError)
+      return
     }
+    if (needsConfirmation) {
+      setInfo(
+        'Účet vytvorený, ale potvrdzovanie e-mailu je stále zapnuté v Supabase — vypnite ho v Authentication nastaveniach, inak sa nebude dať prihlásiť.',
+      )
+    }
+    // else: session created immediately, App switches to the dashboard on its own
   }
 
   return (
@@ -45,14 +54,17 @@ export default function LoginScreen() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label className="mb-1.5 block text-xs uppercase tracking-wide text-textDim">
-              E-mail
+              Meno používateľa
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               autoFocus
+              autoCapitalize="off"
+              autoCorrect="off"
+              placeholder="napr. jnovak"
               className="w-full rounded border border-border bg-bg px-3 py-2 text-sm text-text outline-none focus:border-accent"
             />
           </div>
@@ -72,7 +84,7 @@ export default function LoginScreen() {
           </div>
 
           {error && <p className="text-xs text-status-chyba">{error}</p>}
-          {info && <p className="text-xs text-status-online">{info}</p>}
+          {info && <p className="text-xs text-status-vyvoj">{info}</p>}
 
           <button
             type="submit"

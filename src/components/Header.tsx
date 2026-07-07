@@ -2,6 +2,7 @@ import { LogOut, Search } from 'lucide-react'
 import type { Purpose, Status } from '../types/tool'
 import { PURPOSE_LABELS, STATUS_LABELS } from '../types/tool'
 import { useAuth } from '../lib/AuthContext'
+import { shadowEmailToUsername } from '../lib/username'
 
 interface HeaderProps {
   counts: Record<Status, number>
@@ -53,7 +54,7 @@ export default function Header({
             {session && (
               <div className="flex items-center gap-2 border-l border-border pl-4">
                 <span className="hidden text-xs text-textFaint sm:inline">
-                  {session.user.email}
+                  {session.user.user_metadata?.username ?? shadowEmailToUsername(session.user.email)}
                 </span>
                 <button
                   type="button"
