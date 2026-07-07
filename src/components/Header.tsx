@@ -1,4 +1,4 @@
-import { LogOut, Search } from 'lucide-react'
+import { Eye, LogOut, Search, UserCog } from 'lucide-react'
 import type { Purpose, Status } from '../types/tool'
 import { PURPOSE_LABELS, STATUS_LABELS } from '../types/tool'
 import { useAuth } from '../lib/AuthContext'
@@ -12,6 +12,11 @@ interface HeaderProps {
   onPurposeFilterChange: (value: Purpose | 'all') => void
   statusFilter: Status | 'all'
   onStatusFilterChange: (value: Status | 'all') => void
+  canManageTools: boolean
+  isMegaAdmin: boolean
+  viewAsUser: boolean
+  onToggleViewAsUser: () => void
+  onOpenAdminPanel: () => void
 }
 
 const PURPOSE_FILTERS: Array<Purpose | 'all'> = ['all', 'analyza', 'predikcia', 'fakturacia']
@@ -25,6 +30,11 @@ export default function Header({
   onPurposeFilterChange,
   statusFilter,
   onStatusFilterChange,
+  canManageTools,
+  isMegaAdmin,
+  viewAsUser,
+  onToggleViewAsUser,
+  onOpenAdminPanel,
 }: HeaderProps) {
   const { session, signOut } = useAuth()
 
@@ -56,6 +66,35 @@ export default function Header({
                 <span className="hidden text-xs text-textFaint sm:inline">
                   {session.user.user_metadata?.username ?? shadowEmailToUsername(session.user.email)}
                 </span>
+
+                {canManageTools && (
+                  <button
+                    type="button"
+                    onClick={onToggleViewAsUser}
+                    className={`flex items-center gap-1.5 rounded border px-2 py-1 text-xs uppercase tracking-wide transition-colors ${
+                      viewAsUser
+                        ? 'border-accent bg-accent/15 text-accent'
+                        : 'border-border text-textDim hover:bg-panelHover'
+                    }`}
+                    title="Prepnúť náhľad ako bežný používateľ"
+                  >
+                    <Eye size={13} />
+                    {viewAsUser ? 'Návrat do administrácie' : 'Zobraziť ako používateľ'}
+                  </button>
+                )}
+
+                {isMegaAdmin && (
+                  <button
+                    type="button"
+                    onClick={onOpenAdminPanel}
+                    className="flex items-center gap-1.5 rounded border border-border px-2 py-1 text-xs uppercase tracking-wide text-textDim hover:bg-panelHover hover:text-text"
+                    title="Administrácia používateľov"
+                  >
+                    <UserCog size={13} />
+                    Administrácia
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => signOut()}

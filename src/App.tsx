@@ -10,8 +10,18 @@ import ToolCard from './components/ToolCard'
 import AddTile from './components/AddTile'
 import EmptyState from './components/EmptyState'
 import ToolModal, { type ToolFormValues } from './components/ToolModal'
+import AdminPanel from './components/AdminPanel'
 
 function Dashboard() {
+  const { profile } = useAuth()
+  const role = profile?.role ?? 'user'
+  const canManageTools = role === 'admin' || role === 'mega_admin'
+  const isMegaAdmin = role === 'mega_admin'
+
+  const [viewAsUser, setViewAsUser] = useState(false)
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false)
+  const canEdit = canManageTools && !viewAsUser
+
   const [tools, setTools] = useState<Tool[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -127,6 +137,11 @@ function Dashboard() {
         onPurposeFilterChange={setPurposeFilter}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        canManageTools={canManageTools}
+        isMegaAdmin={isMegaAdmin}
+        viewAsUser={viewAsUser}
+        onToggleViewAsUser={() => setViewAsUser((v) => !v)}
+        onOpenAdminPanel={() => setAdminPanelOpen(true)}
       />
 
       <main className="mx-auto max-w-7xl px-6 py-8">
@@ -141,12 +156,18 @@ function Dashboard() {
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
             {filteredTools.map((tool) => (
-              <ToolCard key={tool.id} tool={tool} onEdit={openEditModal} onDelete={handleDelete} />
+              <ToolCard
+                key={tool.id}
+                tool={tool}
+                canEdit={canEdit}
+                onEdit={openEditModal}
+                onDelete={handleDelete}
+              />
             ))}
 
             {filteredTools.length === 0 && <EmptyState hasTools={tools.length > 0} />}
 
-            <AddTile onClick={openAddModal} />
+            {canEdit && <AddTile onClick={openAddModal} />}
           </div>
         )}
       </main>
@@ -154,6 +175,8 @@ function Dashboard() {
       {modalOpen && (
         <ToolModal initialTool={editingTool} onClose={closeModal} onSubmit={handleSubmit} />
       )}
+
+      {adminPanelOpen && <AdminPanel onClose={() => setAdminPanelOpen(false)} />}
     </div>
   )
 }

@@ -14,11 +14,12 @@ const PURPOSE_ICON_BG: Record<Tool['purpose'], string> = {
 
 interface ToolCardProps {
   tool: Tool
+  canEdit: boolean
   onEdit: (tool: Tool) => void
   onDelete: (id: string) => void
 }
 
-export default function ToolCard({ tool, onEdit, onDelete }: ToolCardProps) {
+export default function ToolCard({ tool, canEdit, onEdit, onDelete }: ToolCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const Icon = getIcon(tool.icon)
   const canOpen = tool.status !== 'chyba' && !!tool.url
@@ -68,45 +69,46 @@ export default function ToolCard({ tool, onEdit, onDelete }: ToolCardProps) {
           Otvoriť
         </a>
 
-        {confirmingDelete ? (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => onDelete(tool.id)}
-              className="flex items-center justify-center rounded border border-status-chyba/50 bg-status-chyba/15 p-1.5 text-status-chyba hover:bg-status-chyba/25"
-              aria-label="Potvrdiť zmazanie"
-            >
-              <Check size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              className="flex items-center justify-center rounded border border-border p-1.5 text-textDim hover:bg-panelHover"
-              aria-label="Zrušiť zmazanie"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => onEdit(tool)}
-              className="flex items-center justify-center rounded border border-border p-1.5 text-textDim hover:bg-panelHover hover:text-text"
-              aria-label="Upraviť"
-            >
-              <Pencil size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(true)}
-              className="flex items-center justify-center rounded border border-border p-1.5 text-textDim hover:border-status-chyba/50 hover:text-status-chyba"
-              aria-label="Zmazať"
-            >
-              <Trash2 size={14} />
-            </button>
-          </>
-        )}
+        {canEdit &&
+          (confirmingDelete ? (
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onDelete(tool.id)}
+                className="flex items-center justify-center rounded border border-status-chyba/50 bg-status-chyba/15 p-1.5 text-status-chyba hover:bg-status-chyba/25"
+                aria-label="Potvrdiť zmazanie"
+              >
+                <Check size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="flex items-center justify-center rounded border border-border p-1.5 text-textDim hover:bg-panelHover"
+                aria-label="Zrušiť zmazanie"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onEdit(tool)}
+                className="flex items-center justify-center rounded border border-border p-1.5 text-textDim hover:bg-panelHover hover:text-text"
+                aria-label="Upraviť"
+              >
+                <Pencil size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                className="flex items-center justify-center rounded border border-border p-1.5 text-textDim hover:border-status-chyba/50 hover:text-status-chyba"
+                aria-label="Zmazať"
+              >
+                <Trash2 size={14} />
+              </button>
+            </>
+          ))}
       </div>
     </div>
   )
